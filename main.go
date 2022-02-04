@@ -19,11 +19,11 @@ type projectStructure struct {
 }
 
 func main() {
-	projectName := flag.String("project-name", "", "Project Name")
-	structureFile := flag.String("project-structure", "default.json", "File with project structure description")
+	projectName := flag.String("project-name", "", "A project name")
+	structureFile := flag.String("project-structure", "default.json", "A file with project structure description")
 	flag.Parse()
 	if len(*projectName) == 0 {
-		log.Fatal("project-Name is required")
+		log.Fatal("project-name is required")
 	}
 	project := getProjectStructure(*structureFile)
 
@@ -60,13 +60,13 @@ func traverse(item item, paths []string, visited map[string]struct{}, patterns m
 	createItem(item, paths, patterns)
 	for _, child := range item.Items {
 		if _, ok := visited[child.Name]; !ok {
-			traverse(child, append(paths, substitutePatternOrValue(patterns, item.Name)), visited, patterns)
+			traverse(child, append(paths, patternValueOrPureValue(patterns, item.Name)), visited, patterns)
 		}
 	}
 }
 
 func createItem(item item, paths []string, patterns map[string]string) {
-	currentPath := path.Join(append(paths, substitutePatternOrValue(patterns, item.Name))...)
+	currentPath := path.Join(append(paths, patternValueOrPureValue(patterns, item.Name))...)
 	if item.IsDirectory {
 		if err := os.Mkdir(currentPath, os.FileMode(0755)); err != nil {
 			log.Fatal(err)
@@ -78,7 +78,7 @@ func createItem(item item, paths []string, patterns map[string]string) {
 	}
 }
 
-func substitutePatternOrValue(patterns map[string]string, name string) string {
+func patternValueOrPureValue(patterns map[string]string, name string) string {
 	if value, ok := patterns[name]; ok {
 		return value
 	}
