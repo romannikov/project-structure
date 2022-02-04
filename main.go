@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -8,69 +9,65 @@ import (
 )
 
 type item struct {
-	items       []item
-	name        string
-	isDirectory bool
+	Items       []item `json:"Items"`
+	Name        string `json:"Name"`
+	IsDirectory bool   `json:"is_directory"`
 }
 
 type projectStructure struct {
-	items []item
+	Items []item `json:"Items"`
 }
 
 func main() {
-	projectName := flag.String("project-name", "", "Project name")
+	projectName := flag.String("project-name", "", "Project Name")
+	structureFile := flag.String("project-structure", "default.json", "File with project structure description")
 	flag.Parse()
 	if len(*projectName) == 0 {
-		log.Fatal("project-name is required")
+		log.Fatal("project-Name is required")
 	}
-	project := projectStructure{
-		items: []item{
-			{name: "api", isDirectory: true},
-			{name: "build", isDirectory: true},
-			{name: "cmd", isDirectory: true, items: []item{
-				{name: "main.go", isDirectory: false},
-			},
-			},
-			{name: "deploy", isDirectory: true},
-			{name: "docs", isDirectory: true},
-			{name: "internal", isDirectory: true, items: []item{
-				{name: *projectName, isDirectory: true, items: []item{
-					{name: "rest", isDirectory: true},
-					{name: "service", isDirectory: true},
-				},
-				},
-			},
-			},
-			{name: "pkg", isDirectory: true},
-		},
-	}
+	project := getProjectStructure(*structureFile)
 
 	visited := make(map[string]struct{})
+	patterns := make(map[string]string)
+	patterns["{project_name}"] = *projectName
 	curPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
-	createItem(item{name: *projectName, isDirectory: true}, []string{curPath})
-	for _, item := range project.items {
-		if _, ok := visited[item.name]; !ok {
-			traverse(item, []string{curPath, *projectName}, visited)
+	createItem(item{Name: *projectName, IsDirectory: true}, []string{curPath}, nil)
+	for _, item := range project.Items {
+		if _, ok := visited[item.Name]; !ok {
+			traverse(item, []string{curPath, *projectName}, visited, patterns)
 		}
 	}
 }
 
-func traverse(item item, paths []string, visited map[string]struct{}) {
-	visited[item.name] = struct{}{}
-	createItem(item, paths)
-	for _, child := range item.items {
-		if _, ok := visited[child.name]; !ok {
-			traverse(child, append(paths, item.name), visited)
+func getProjectStructure(filename string) projectStructure {
+	byteContent, err := os.ReadFile(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var project projectStructure
+	err = json.Unmarshal(byteContent, &project)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return project
+}
+
+func traverse(item item, paths []string, visited map[string]struct{}, patterns map[string]string) {
+	visited[item.Name] = struct{}{}
+	createItem(item, paths, patterns)
+	for _, child := range item.Items {
+		if _, ok := visited[child.Name]; !ok {
+			traverse(child, append(paths, substitutePatternOrValue(patterns, item.Name)), visited, patterns)
 		}
 	}
 }
 
-func createItem(item item, paths []string) {
-	currentPath := path.Join(append(paths, item.name)...)
-	if item.isDirectory {
+func createItem(item item, paths []string, patterns map[string]string) {
+	currentPath := path.Join(append(paths, substitutePatternOrValue(patterns, item.Name))...)
+	if item.IsDirectory {
 		if err := os.Mkdir(currentPath, os.FileMode(0755)); err != nil {
 			log.Fatal(err)
 		}
@@ -79,4 +76,11 @@ func createItem(item item, paths []string) {
 	if _, err := os.Create(currentPath); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func substitutePatternOrValue(patterns map[string]string, name string) string {
+	if value, ok := patterns[name]; ok {
+		return value
+	}
+	return name
 }
