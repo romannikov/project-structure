@@ -19,11 +19,11 @@ type projectStructure struct {
 }
 
 func main() {
-	projectName := flag.String("project-name", "", "A project name")
-	structureFile := flag.String("project-structure", "default.json", "A file with project structure description")
+	projectName := flag.String("name", "", "A project name")
+	structureFile := flag.String("structure", "default.json", "A file with a project structure description")
 	flag.Parse()
 	if len(*projectName) == 0 {
-		log.Fatal("project-name is required")
+		log.Fatal("Name is required.")
 	}
 	project := getProjectStructure(*structureFile)
 

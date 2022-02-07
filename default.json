@@ -27,10 +27,6 @@
       "is_directory":true
     },
     {
-      "name":"build",
-      "is_directory":true
-    },
-    {
       "name":"internal",
       "is_directory":true,
       "items":[
