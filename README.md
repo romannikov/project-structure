@@ -4,9 +4,9 @@ It's a CLI for an initial project structure creation.
 
 ## Examples
 
-There is only one required parameter: it's a project name (`project-name`).
+There is only one required parameter: it's a project name (`name`).
 ```
-project-structure --project-name example
+project-structure --name example
 ```
 
 By default CLI creates a go-like project structure that looks like:
@@ -24,7 +24,7 @@ project-name
       service/
   pkg/
 ```
-Also, it can be customize by a `project-structure` parameter that should contain a path ot the file with the structure.
+Also, it can be customize by a `structure` parameter that should contain a path ot the file with the structure.
 File example:
 ```
 {
